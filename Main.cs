@@ -70,7 +70,12 @@ namespace net.vieapps.Services.Notifications
 		{
 			// prepare
 			var request = requestInfo.GetRequestExpando();
-			var filter = Filters<Notification>.And(Filters<Notification>.Equals("RecipientID", requestInfo.Session.User.ID));
+			var filter = request.Get<ExpandoObject>("FilterBy")?.ToFilterBy<Notification>() ?? Filters<Notification>.And();
+			if (filter.GetChild("RecipientID") is not FilterBy<Notification> filterByRecipientID)
+				(filter as FilterBys<Notification>).Add(Filters<Notification>.Equals("RecipientID", requestInfo.Session.User.ID));
+			else
+				filterByRecipientID.Value = requestInfo.Session.User.ID;
+			filter.Prepare(requestInfo);
 			var sort = Sorts<Notification>.Descending("Time");
 			var pagination = request.Get<ExpandoObject>("Pagination")?.GetPagination() ?? new Tuple<long, int, int, int>(-1, 0, 20, 1);
 			var pageSize = pagination.Item3;
@@ -102,7 +107,7 @@ namespace net.vieapps.Services.Notifications
 				{
 					{ "FilterBy", filter.ToClientJson() },
 					{ "SortBy", sort?.ToClientJson() },
-					{ "Pagination", new Tuple<long, int, int, int>(totalRecords, new Tuple<long, int>(totalRecords, pageSize).GetTotalPages(), pageSize, pageNumber).GetPagination() },
+					{ "Pagination", new Tuple<long, int, int, int>(totalRecords, Extensions.GetTotalPages(totalRecords, pageSize), pageSize, pageNumber).GetPagination() },
 					{ "Objects", notifications.Select(notification => notification.ToJson()).ToJArray() }
 				};
 		}
