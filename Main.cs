@@ -85,7 +85,7 @@ namespace net.vieapps.Services.Notifications
 			var totalRecords = await Notification.CountAsync(filter, null, cancellationToken).ConfigureAwait(false);
 			var notifications = totalRecords > 0
 				? await Notification.FindAsync(filter, sort, pageSize, pageNumber, null, cancellationToken).ConfigureAwait(false)
-				: new List<Notification>();
+				: [];
 
 			if (asFetch && pageNumber < 2 && totalRecords > pageSize)
 			{
@@ -101,6 +101,7 @@ namespace net.vieapps.Services.Notifications
 					DeviceID = requestInfo.Session.DeviceID,
 					Data = notification.ToJson()
 				}.Send());
+
 			return asFetch
 				? new JObject()
 				: new JObject
