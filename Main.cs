@@ -94,23 +94,24 @@ namespace net.vieapps.Services.Notifications
 			}
 
 			// response
-			if (asFetch)
+			if (asFetch && !"false".IsEquals(requestInfo.GetParameter("x-update-message")))
+			{
 				notifications.ForEach(notification => new UpdateMessage
 				{
 					Type = this.ServiceName,
 					DeviceID = requestInfo.Session.DeviceID,
 					Data = notification.ToJson()
 				}.Send());
+				return new JObject();
+			}
 
-			return asFetch
-				? new JObject()
-				: new JObject
-				{
-					{ "FilterBy", filter.ToClientJson() },
-					{ "SortBy", sort?.ToClientJson() },
-					{ "Pagination", new Tuple<long, int, int, int>(totalRecords, Extensions.GetTotalPages(totalRecords, pageSize), pageSize, pageNumber).GetPagination() },
-					{ "Objects", notifications.Select(notification => notification.ToJson()).ToJArray() }
-				};
+			return new JObject
+			{
+				{ "FilterBy", filter.ToClientJson() },
+				{ "SortBy", sort?.ToClientJson() },
+				{ "Pagination", new Tuple<long, int, int, int>(totalRecords, Extensions.GetTotalPages(totalRecords, pageSize), pageSize, pageNumber).GetPagination() },
+				{ "Objects", notifications.Select(notification => notification.ToJson()).ToJArray() }
+			};
 		}
 
 		async Task<JToken> CreateNotificationAsync(RequestInfo requestInfo, bool isSystemAdministrator, CancellationToken cancellationToken)
@@ -124,11 +125,13 @@ namespace net.vieapps.Services.Notifications
 			var request = requestInfo.GetBodyExpando();
 			var notification = Notification.CreateInstance(request, "Privileges,Created,CreatedID,LastModified,LastModifiedID".ToHashSet());
 			var response = notification.ToJson();
+
 			if (string.IsNullOrWhiteSpace(notification.RecipientID))
 			{
 				var recipientIDs = request.Get<List<string>>("Recipients");
 				if (recipientIDs == null || recipientIDs.Count < 1)
 					throw new InvalidRequestException("No recipient");
+
 				await recipientIDs.ForEachAsync(async userID =>
 				{
 					notification.ID = UtilityService.NewUUID;
@@ -138,21 +141,23 @@ namespace net.vieapps.Services.Notifications
 					(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
 					{
 						Type = this.ServiceName,
-						DeviceID = info.Item2,
-						Data = response
+						Data = response,
+						DeviceID = info.Item2
 					}.Send());
 				}, true, false).ConfigureAwait(false);
 			}
+
 			else
 			{
 				await Notification.CreateAsync(notification, cancellationToken).ConfigureAwait(false);
 				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
 				{
 					Type = this.ServiceName,
-					DeviceID = info.Item2,
-					Data = response
+					Data = response,
+					DeviceID = info.Item2
 				}.Send());
 			}
+
 			return response;
 		}
 
@@ -162,17 +167,19 @@ namespace net.vieapps.Services.Notifications
 			var gotRights = isSystemAdministrator || requestInfo.Session.User.ID.IsEquals(notification.RecipientID);
 			if (!gotRights)
 				throw new AccessDeniedException();
+
 			var response = notification.ToJson();
 			if (!notification.Read)
 			{
 				notification.Read = true;
-				response = notification.ToJson();
 				await Notification.UpdateAsync(notification, true, cancellationToken).ConfigureAwait(false);
+				response = notification.ToJson();
 				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
 				{
 					Type = this.ServiceName,
+					Data = response,
 					DeviceID = info.Item2,
-					Data = response
+					ExcludedDeviceID = requestInfo.Session.DeviceID
 				}.Send());
 			}
 			return response;
