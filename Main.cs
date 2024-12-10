@@ -77,9 +77,9 @@ namespace net.vieapps.Services.Notifications
 				filterByRecipientID.Value = requestInfo.Session.User.ID;
 			filter.Prepare(requestInfo);
 			var sort = Sorts<Notification>.Descending("Time");
-			var pagination = request.Get<ExpandoObject>("Pagination")?.GetPagination() ?? new Tuple<long, int, int, int>(-1, 0, 20, 1);
-			var pageSize = pagination.Item3;
-			var pageNumber = pagination.Item4;
+			var pagination = request.Get<ExpandoObject>("Pagination")?.GetPagination() ?? (-1, 0, 20, 1);
+			var pageSize = pagination.PageSize;
+			var pageNumber = pagination.PageNumber;
 
 			// search
 			var totalRecords = await Notification.CountAsync(filter, null, cancellationToken).ConfigureAwait(false);
@@ -109,7 +109,7 @@ namespace net.vieapps.Services.Notifications
 			{
 				{ "FilterBy", filter.ToClientJson() },
 				{ "SortBy", sort?.ToClientJson() },
-				{ "Pagination", new Tuple<long, int, int, int>(totalRecords, Extensions.GetTotalPages(totalRecords, pageSize), pageSize, pageNumber).GetPagination() },
+				{ "Pagination", (totalRecords, Extensions.GetTotalPages(totalRecords, pageSize), pageSize, pageNumber).GetPagination() },
 				{ "Objects", notifications.Select(notification => notification.ToJson()).ToJArray() }
 			};
 		}
