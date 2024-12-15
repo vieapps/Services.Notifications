@@ -138,11 +138,11 @@ namespace net.vieapps.Services.Notifications
 					notification.RecipientID = userID;
 					await Notification.CreateAsync(notification, cancellationToken).ConfigureAwait(false);
 					response = notification.ToJson();
-					(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
+					(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.IsOnline).ForEach(info => new UpdateMessage
 					{
 						Type = this.ServiceName,
 						Data = response,
-						DeviceID = info.Item2
+						DeviceID = info.DeviceID
 					}.Send());
 				}, true, false).ConfigureAwait(false);
 			}
@@ -150,11 +150,11 @@ namespace net.vieapps.Services.Notifications
 			else
 			{
 				await Notification.CreateAsync(notification, cancellationToken).ConfigureAwait(false);
-				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
+				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.IsOnline).ForEach(info => new UpdateMessage
 				{
 					Type = this.ServiceName,
 					Data = response,
-					DeviceID = info.Item2
+					DeviceID = info.DeviceID
 				}.Send());
 			}
 
@@ -174,11 +174,11 @@ namespace net.vieapps.Services.Notifications
 				notification.Read = true;
 				await Notification.UpdateAsync(notification, true, cancellationToken).ConfigureAwait(false);
 				response = notification.ToJson();
-				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.Item4).ForEach(info => new UpdateMessage
+				(await requestInfo.GetUserSessionsAsync(notification.RecipientID, cancellationToken).ConfigureAwait(false)).Where(info => info.IsOnline).ForEach(info => new UpdateMessage
 				{
 					Type = this.ServiceName,
 					Data = response,
-					DeviceID = info.Item2,
+					DeviceID = info.DeviceID,
 					ExcludedDeviceID = requestInfo.Session.DeviceID
 				}.Send());
 			}
