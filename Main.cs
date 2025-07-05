@@ -26,6 +26,7 @@ namespace net.vieapps.Services.Notifications
 		public override void Start(string[] args = null, bool initializeRepository = true, Action<IService> next = null)
 		{
 			Cache = new Cache($"VIEApps-Services-{this.ServiceName}", Components.Utility.Logger.GetLoggerFactory());
+			this.StartTimer(this.CleanNotificationsAsync, 4 * 60 * 60);
 			base.Start(args, initializeRepository, next);
 		}
 
@@ -184,6 +185,9 @@ namespace net.vieapps.Services.Notifications
 			}
 			return response;
 		}
+
+		Task CleanNotificationsAsync()
+			=> Notification.DeleteManyAsync(Filters<Notification>.LessThan("Time", DateTime.Now.AddDays(-365)), null, this.CancellationToken);
 	}
 
 	[Repository]
