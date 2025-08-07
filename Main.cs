@@ -190,6 +190,6 @@ namespace net.vieapps.Services.Notifications
 			=> Notification.DeleteManyAsync(Filters<Notification>.LessThan("Time", DateTime.Now.AddDays(-365)), null, this.CancellationToken);
 	}
 
-	[Repository]
+	[Repository(ServiceName = "Notifications")]
 	public abstract class Repository<T> : RepositoryBase<T> where T : class { }
 }
