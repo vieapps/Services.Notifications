@@ -17,15 +17,30 @@ namespace net.vieapps.Services.Notifications
 {
 	public class ServiceComponent : ServiceBase
 	{
-		public static Cache Cache { get; internal set; }
+		public static Cache Cache { get; } = Cache.CreateInstance("VIEApps-Services-Notifications", Components.Utility.Logger.GetLoggerFactory(), "true".IsEquals(UtilityService.GetAppSetting("Notifications:Cache:L1")));
 
 		public override string ServiceName => "Notifications";
 
 		string NotificationsKey => this.GetKey("Notifications", "VIEApps-56BA2999-NGX-A2E4-Services-4B54-Notification-83EB-Key-693C250DC95D");
 
+		IDisposable CacheCommunicator { get; set; }
+
+		public override Task RegisterServiceAsync(IEnumerable<string> args, Action<IService> onSuccess = null, Action<Exception> onError = null)
+			=> base.RegisterServiceAsync
+			(
+				args,
+				_ =>
+				{
+					this.CacheCommunicator?.Dispose();
+					this.CacheCommunicator = Router.IncomingChannel.AssignProcessL1CacheRequest(Cache, this);
+					Cache.AssignSendL1CacheRequest(this);
+					onSuccess?.Invoke(this);
+				},
+				onError
+			);
+
 		public override void Start(string[] args = null, bool initializeRepository = true, Action<IService> next = null)
 		{
-			Cache = new Cache($"VIEApps-Services-{this.ServiceName}", Components.Utility.Logger.GetLoggerFactory());
 			this.StartTimer(this.CleanNotificationsAsync, 4 * 60 * 60);
 			base.Start(args, initializeRepository, next);
 		}
