@@ -32,8 +32,10 @@ namespace net.vieapps.Services.Notifications
 				_ =>
 				{
 					this.CacheCommunicator?.Dispose();
-					this.CacheCommunicator = Router.IncomingChannel.AssignProcessL1CacheRequest(Cache, this);
-					Cache.AssignSendL1CacheRequest(this);
+					this.CacheCommunicator = Router.GotBackupRouter()
+						? Router.BackupChannel.AssignProcessL1CacheRequest(Cache, this)
+						: Router.IncomingChannel.AssignProcessL1CacheRequest(Cache, this);
+					Cache.AssignSendL1CacheRequest(this, Router.GotBackupRouter());
 					onSuccess?.Invoke(this);
 				},
 				onError
