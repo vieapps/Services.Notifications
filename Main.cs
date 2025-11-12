@@ -25,26 +25,31 @@ namespace net.vieapps.Services.Notifications
 
 		IDisposable CacheCommunicator { get; set; }
 
+		void RegisterCacheCommunicator()
+		{
+			this.CacheCommunicator?.Dispose();
+			this.CacheCommunicator = Router.GotBackupRouter()
+				? Router.BackupChannel.AssignProcessL1CacheRequest(Cache, this)
+				: Router.IncomingChannel.AssignProcessL1CacheRequest(Cache, this);
+			Cache.AssignSendL1CacheRequest(this, Router.GotBackupRouter());
+		}
+
 		public override Task RegisterServiceAsync(IEnumerable<string> args, Action<IService> onSuccess = null, Action<Exception> onError = null)
 			=> base.RegisterServiceAsync
 			(
 				args,
 				_ =>
 				{
-					this.CacheCommunicator?.Dispose();
-					this.CacheCommunicator = Router.GotBackupRouter()
-						? Router.BackupChannel.AssignProcessL1CacheRequest(Cache, this)
-						: Router.IncomingChannel.AssignProcessL1CacheRequest(Cache, this);
-					Cache.AssignSendL1CacheRequest(this, Router.GotBackupRouter());
+					this.RegisterCacheCommunicator();
 					onSuccess?.Invoke(this);
 				},
 				onError
 			);
 
-		public override void Start(string[] args = null, bool initializeRepository = true, Action<IService> next = null)
+		public override Task StartAsync(string[] args = null, bool initializeRepository = true, Action<IService> next = null)
 		{
 			this.StartTimer(this.CleanNotificationsAsync, 4 * 60 * 60);
-			base.Start(args, initializeRepository, next);
+			return this.StartAsync(args, (_, _) => this.RegisterCacheCommunicator(), initializeRepository, next);
 		}
 
 		public override async Task<JToken> ProcessRequestAsync(RequestInfo requestInfo, CancellationToken cancellationToken = default)
