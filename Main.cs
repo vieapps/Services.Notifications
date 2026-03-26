@@ -186,7 +186,7 @@ namespace net.vieapps.Services.Notifications
 
 		async Task<JToken> UpdateNotificationAsync(RequestInfo requestInfo, bool isSystemAdministrator, CancellationToken cancellationToken)
 		{
-			var notification = await Notification.GetAsync<Notification>(requestInfo.GetObjectIdentity(), cancellationToken).ConfigureAwait(false) ?? throw new InformationNotFoundException();
+			var notification = await Notification.GetAsync(requestInfo.GetObjectIdentity(), cancellationToken).ConfigureAwait(false) ?? throw new InformationNotFoundException();
 			var gotRights = isSystemAdministrator || requestInfo.Session.User.ID.IsEquals(notification.RecipientID);
 			if (!gotRights)
 				throw new AccessDeniedException();
