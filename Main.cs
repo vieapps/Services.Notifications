@@ -49,7 +49,7 @@ namespace net.vieapps.Services.Notifications
 		public override Task StartAsync(string[] args = null, bool initializeRepository = true, Action<IService> next = null)
 		{
 			this.StartTimer(this.CleanNotificationsAsync, 4 * 60 * 60);
-			return this.StartAsync(args, (_, _) => this.RegisterCacheCommunicator(), initializeRepository, next);
+			return this.StartAsync(args, (_, _) => this.RegisterCacheCommunicator(), initializeRepository, Cache, next);
 		}
 
 		public override async Task<JToken> ProcessRequestAsync(RequestInfo requestInfo, CancellationToken cancellationToken = default)
