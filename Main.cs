@@ -55,6 +55,7 @@ namespace net.vieapps.Services.Notifications
 		public override async Task<JToken> ProcessRequestAsync(RequestInfo requestInfo, CancellationToken cancellationToken = default)
 		{
 			var stopwatch = Stopwatch.StartNew();
+			this.Statistics.RpcEntered();
 			this.WriteLogs(requestInfo, $"Begin request ({requestInfo.Verb} {requestInfo.GetURI()})");
 			using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, this.CancellationTokenSource.Token);
 			try
@@ -86,6 +87,10 @@ namespace net.vieapps.Services.Notifications
 			catch (Exception ex)
 			{
 				throw this.GetRuntimeException(requestInfo, ex, stopwatch);
+			}
+			finally
+			{
+				this.Statistics.RpcCompleted(stopwatch);
 			}
 		}
 
